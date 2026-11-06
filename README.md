@@ -83,7 +83,7 @@ No simulador do topo da página, você pode alternar entre as contas abaixo com 
 ## 📁 Estrutura de Arquivos
 
 ```text
-cerigrafia/
+SILAS_CONFECÇÕES_SERIGRAFIA/
 ├── index.html        # Estrutura completa do portal (Admin, Fábrica e Área do Cliente)
 ├── styles.css        # Folha de estilos, fontes, animações e layout de impressão da OP
 ├── app.js            # Lógica de negócio, auditoria, motor de grade e persistência

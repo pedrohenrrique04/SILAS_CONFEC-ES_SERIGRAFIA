@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Silas Confecções e Serigrafia — Plataforma de Captação e Gestão de Pedidos</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="styles.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            silas: {
+              50: '#f0f5ff',
+              100: '#e0eafc',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e3a8a',
+              900: '#162a45',
+              950: '#0b1526'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+
+  <!-- BARRA SUPERIOR DE SIMULAÇÃO DO PROTÓTIPO (Modo Apresentação) -->
+  <div class="bg-silas-950 text-white text-xs py-2 px-4 border-b border-slate-800 no-print">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-semibold border border-amber-400/30">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+          PROTÓTIPO INTERATIVO
+        </span>
+        <span class="text-slate-300 hidden sm:inline">
+          Alterne entre o <strong>Painel Interno da Serigrafia</strong> e a <strong>Visão do Cliente</strong> ou troque de usuário para testar permissões e o filtro "Meus".
+        </span>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Conta Logada Atual + Botão de Login -->
+        <div class="flex items-center gap-2 bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-1">
+          <i data-lucide="user-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span class="text-slate-400">Conta Logada:</span>
+          <span id="top-logged-user-label" class="text-white font-bold">Kauê (@kaue)</span>
+          <span id="current-user-role-badge" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-600 text-white">
+            Responsável
+          </span>
+        </div>
+
+        <button onclick="openLoginModal()" class="inline-flex items-center gap-1.5 text-white bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded-lg font-semibold transition shadow-xs">
+          <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+          <span>Trocar Conta / Login</span>
+        </button>
+
+        <button onclick="resetDemoData()" class="inline-flex items-center gap-1 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg border border-slate-700 transition" title="Restaurar dados originais da demonstração">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+          <span>Resetar Demo</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER PRINCIPAL E NAVEGAÇÃO -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between py-3 gap-3">
+        <!-- Marca Silas Confecções -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-xl bg-silas-900 flex items-center justify-center text-white font-extrabold text-lg shadow-sm border border-silas-700">
+              SC
+            </div>
+            <div>
+              <h1 class="text-lg font-extrabold tracking-tight text-slate-900">SILAS CONFECÇÕES E SERIGRAFIA</h1>
+              <p class="text-xs text-slate-500">Plataforma Centralizada de Captação, Rastreabilidade, Clientes e Auditoria</p>
+            </div>
+          </div>
+
+          <!-- Atalho Mobile para Formulário do Cliente -->
+          <button onclick="switchTab('cliente-portal')" class="lg:hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold shadow-sm">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            Visão Cliente
+          </button>
+        </div>
+
+        <!-- Abas de Navegação -->
+        <nav class="flex items-center gap-1 overflow-x-auto pb-1 lg:pb-0" aria-label="Navegação Principal">
+          <button id="tab-btn-pedidos" onclick="switchTab('pedidos')" class="nav-tab-btn inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition whitespace-nowrap">
+            <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+            <span>Pedidos (OPs)</span>
+            <span id="nav-badge-pedidos" class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 font-bold">0</span>
+          </button>
+
+          <button id="tab-btn-clientes" onclick="switchTab('clientes')" class="nav-tab-btn inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition whitespace-nowrap">
+            <i data-lucide="users" class="w-4 h-4"></i>
+            <span>Clientes</span>
+            <span id="nav-badge-clientes" class="px-2 py-0.5 text-xs rounded-full bg-slate-100 text-slate-700 font-bold">0</span>
+          </button>
+
+          <button id="tab-btn-auditoria" onclick="switchTab('auditoria')" class="nav-tab-btn inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition whitespace-nowrap">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+            <span>Auditoria</span>
+            <span id="nav-badge-auditoria" class="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 font-bold">0</span>
+          </button>
+
+          <button id="tab-btn-usuario" onclick="switchTab('usuario')" class="nav-tab-btn inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition whitespace-nowrap">
+            <i data-lucide="link-2" class="w-4 h-4"></i>
+            <span>Meu Link & Equipe</span>
+          </button>
+
+          <div class="h-6 w-px bg-slate-200 mx-1 hidden sm:block"></div>
+
+          <button id="tab-btn-cliente-portal" onclick="switchTab('cliente-portal')" class="nav-tab-btn inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition whitespace-nowrap border border-emerald-200 bg-emerald-50/70 text-emerald-800 hover:bg-emerald-100">
+            <i data-lucide="smartphone" class="w-4 h-4 text-emerald-600"></i>
+            <span>Área do Cliente (Formulário & Rastreio)</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 no-print">
+
+    <!-- ==========================================
+         ABA 1: PEDIDOS E ORDENS DE PRODUÇÃO (OPs)
+         ========================================== -->
+    <section id="tab-pedidos" class="tab-section space-y-6 animate-fade-in">
+      <!-- Cards de Indicadores (KPIs) -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4" id="pedidos-kpi-cards">
+        <!-- Preenchido via JS -->
+      </div>
+
+      <!-- Barra de Filtros e Ações -->
+      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-4">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <!-- Botões de Filtro Rápido Solicitados: Todos, Recebido, Em Andamento, Concluído e Meus -->
+          <div class="flex flex-wrap items-center gap-1.5" id="order-status-filters">
+            <button onclick="setOrderFilter('todos')" data-filter="todos" class="order-filter-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-1.5">
+              <i data-lucide="layers" class="w-4 h-4"></i>
+              <span>Todos</span>
+              <span id="count-filter-todos" class="px-1.5 py-0.2 rounded-full text-xs">0</span>
+            </button>
+            <button onclick="setOrderFilter('recebido')" data-filter="recebido" class="order-filter-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-1.5">
+              <i data-lucide="inbox" class="w-4 h-4"></i>
+              <span>Recebido</span>
+              <span id="count-filter-recebido" class="px-1.5 py-0.2 rounded-full text-xs">0</span>
+            </button>
+            <button onclick="setOrderFilter('em_andamento')" data-filter="em_andamento" class="order-filter-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-1.5">
+              <i data-lucide="hammer" class="w-4 h-4"></i>
+              <span>Em Andamento</span>
+              <span id="count-filter-em_andamento" class="px-1.5 py-0.2 rounded-full text-xs">0</span>
+            </button>
+            <button onclick="setOrderFilter('concluido')" data-filter="concluido" class="order-filter-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-1.5">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+              <span>Concluído</span>
+              <span id="count-filter-concluido" class="px-1.5 py-0.2 rounded-full text-xs">0</span>
+            </button>
+            <button onclick="setOrderFilter('meus')" data-filter="meus" class="order-filter-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 border border-blue-200">
+              <i data-lucide="user-check" class="w-4 h-4"></i>
+              <span>Meus Pedidos</span>
+              <span id="count-filter-meus" class="px-1.5 py-0.2 rounded-full text-xs">0</span>
+            </button>
+          </div>
+
+          <!-- Busca, Visão Lista/Kanban e Botão Novo Pedido -->
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="relative flex-1 sm:w-64">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input
+                type="text"
+                id="order-search-input"
+                oninput="renderOrders()"
+                placeholder="Buscar OP, escola, cliente, turma..."
+                class="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+              />
+            </div>
+
+            <!-- Alternador de Visualização (Tabela vs Kanban) -->
+            <div class="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+              <button id="view-mode-table" onclick="setOrderViewMode('table')" class="px-2.5 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1 bg-white shadow-sm text-slate-800">
+                <i data-lucide="table-2" class="w-3.5 h-3.5"></i>
+                Lista
+              </button>
+              <button id="view-mode-kanban" onclick="setOrderViewMode('kanban')" class="px-2.5 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1 text-slate-500 hover:text-slate-800">
+                <i data-lucide="columns-3" class="w-3.5 h-3.5"></i>
+                Kanban
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subbarra informativa do filtro ativo e permissões -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs text-slate-500">
+          <div id="active-filter-description" class="flex items-center gap-1.5">
+            <!-- Preenchido via JS -->
+          </div>
+          <div id="permission-hint-banner" class="flex items-center gap-1.5">
+            <!-- Preenchido via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Container da Lista / Tabela de Pedidos -->
+      <div id="orders-table-container" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <!-- Preenchido via JS -->
+      </div>
+
+      <!-- Container da Visão Kanban (Oculto por padrão) -->
+      <div id="orders-kanban-container" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Preenchido via JS -->
+      </div>
+    </section>
+
+    <!-- ==========================================
+         ABA 2: CLIENTES (GESTÃO & ANTI-DUPLICIDADE)
+         ========================================== -->
+    <section id="tab-clientes" class="tab-section hidden space-y-6 animate-fade-in">
+      <!-- Banner Explicativo de Unificação e LGPD -->
+      <div class="bg-gradient-to-r from-silas-900 to-blue-900 rounded-xl p-5 text-white shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-blue-300">
+            <i data-lucide="database-zap" class="w-4 h-4"></i>
+            Base Consolidada & Anti-Duplicidade (LGPD)
+          </div>
+          <h2 class="text-xl font-bold">Gestão Inteligente de Clientes e Escolas</h2>
+          <p class="text-xs sm:text-sm text-blue-100 max-w-3xl">
+            Cada cliente é identificado automaticamente por <strong>CPF/CNPJ, E-mail ou WhatsApp</strong>. Quando um cliente já cadastrado preenche um novo formulário pelo link do responsável, o pedido é vinculado automaticamente ao cadastro atual sem gerar duplicidade.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
+          <button onclick="openNewClientModal()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white text-silas-900 hover:bg-blue-50 font-semibold text-sm shadow-sm transition">
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            <span>Novo Cliente Manual</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de Busca e Filtros de Clientes -->
+      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="relative flex-1 max-w-md">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input
+            type="text"
+            id="client-search-input"
+            oninput="renderClients()"
+            placeholder="Buscar por nome, escola, CPF/CNPJ, e-mail ou WhatsApp..."
+            class="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+          />
+        </div>
+        <div class="flex items-center gap-3 text-xs text-slate-600">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+            100% com Consentimento LGPD Registrado
+          </span>
+        </div>
+      </div>
+
+      <!-- Grid / Tabela de Clientes -->
+      <div id="clients-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Preenchido via JS -->
+      </div>
+    </section>
+
+    <!-- ==========================================
+         ABA 3: AUDITORIA (TRILHA IMUTÁVEL)
+         ========================================== -->
+    <section id="tab-auditoria" class="tab-section hidden space-y-6 animate-fade-in">
+      <!-- Cabeçalho de Auditoria Imutável -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold">
+              <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+              REGISTRO IMUTÁVEL
+            </span>
+            <span class="text-xs text-slate-500">Conformidade & Rastreabilidade Total</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900">Trilha de Auditoria de Alterações (HistoricoPedido)</h2>
+          <p class="text-xs sm:text-sm text-slate-600 max-w-3xl">
+            Todas as mudanças realizadas em pedidos, etapas da OP, grade de tamanhos ou dados de clientes são gravadas automaticamente com <strong>Data/Hora, Responsável, ID do Pedido, Campo Alterado, Valor Anterior e Valor Novo</strong>. Nenhum perfil pode excluir ou editar estes registros.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-center">
+            <div class="text-xs text-slate-500">Eventos Registrados</div>
+            <div id="audit-total-counter" class="text-2xl font-extrabold text-slate-900 font-mono-code">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtros da Auditoria -->
+      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input
+            type="text"
+            id="audit-search-input"
+            oninput="renderAuditLogs()"
+            placeholder="Filtrar por ID do pedido (ex: OP-2026-0042) ou campo..."
+            class="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <select id="audit-user-filter" onchange="renderAuditLogs()" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="todos">Todos os Responsáveis / Usuários</option>
+          </select>
+        </div>
+
+        <div>
+          <select id="audit-order-filter" onchange="renderAuditLogs()" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="todos">Todos os Pedidos (OPs)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tabela de Auditoria -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <th class="py-3.5 px-4">Quando (Data / Hora)</th>
+                <th class="py-3.5 px-4">Responsável</th>
+                <th class="py-3.5 px-4">ID do Pedido (OP)</th>
+                <th class="py-3.5 px-4">Campo Alterado</th>
+                <th class="py-3.5 px-4">Valor Anterior</th>
+                <th class="py-3.5 px-4">Valor Novo</th>
+                <th class="py-3.5 px-4 text-right">Integridade</th>
+              </tr>
+            </thead>
+            <tbody id="audit-table-body" class="divide-y divide-slate-200 text-sm">
+              <!-- Preenchido via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         ABA 4: USUÁRIO & LINK DE CAPTAÇÃO EXCLUSIVO
+         ========================================== -->
+    <section id="tab-usuario" class="tab-section hidden space-y-6 animate-fade-in">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Coluna Esquerda (2/3): Card do Link Rastreável do Responsável Logado -->
+        <div class="lg:col-span-2 space-y-6">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="bg-gradient-to-r from-silas-900 via-silas-800 to-blue-700 p-6 text-white">
+              <div class="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 text-blue-100 text-xs font-semibold mb-2">
+                    <i data-lucide="link" class="w-3.5 h-3.5"></i>
+                    VINCULAÇÃO PELO LOGIN DO RESPONSÁVEL
+                  </span>
+                  <h2 class="text-xl sm:text-2xl font-bold" id="seller-link-title">Meu Link Exclusivo de Formulário</h2>
+                  <p class="text-xs sm:text-sm text-blue-100 mt-1">
+                    O seu link carrega o seu <strong>Login de Responsável</strong>. Quando o cliente abre este link, o sistema identifica automaticamente a sua conta e vincula o pedido a você.
+                  </p>
+                </div>
+                <div class="bg-white/10 backdrop-blur rounded-xl p-3 border border-white/15 text-right">
+                  <div class="text-[11px] uppercase tracking-wider text-blue-200">Login da Sua Conta</div>
+                  <div id="seller-token-badge" class="text-lg font-mono-code font-bold text-white">@kaue</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-6 space-y-6">
+              <!-- Resumo da Conta Logada e Restrições -->
+              <div id="logged-account-permissions-box" class="rounded-xl p-4 border bg-slate-50 border-slate-200">
+                <!-- Preenchido via JS de acordo com a conta logada (Admin vs Responsável) -->
+              </div>
+
+              <!-- Caixa de Cópia do Link -->
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  Link do Formulário com Seu Login para Enviar ao Cliente:
+                </label>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <div class="flex-1 flex items-center gap-2 bg-slate-50 border-2 border-blue-200 rounded-xl px-3.5 py-3">
+                    <i data-lucide="globe" class="w-4 h-4 text-blue-600 shrink-0"></i>
+                    <input
+                      type="text"
+                      id="seller-shareable-link"
+                      readonly
+                      value=""
+                      class="w-full bg-transparent text-sm font-mono-code font-semibold text-slate-800 focus:outline-none select-all"
+                    />
+                  </div>
+                  <button onclick="copySellerLink()" id="btn-copy-link" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition shrink-0">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                    <span>Copiar Link</span>
+                  </button>
+                </div>
+                <p id="copy-feedback-msg" class="text-xs text-emerald-600 font-semibold mt-2 hidden flex items-center gap-1">
+                  <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                  Link copiado para a área de transferência! Pronto para colar no WhatsApp do cliente.
+                </p>
+              </div>
+
+              <!-- Ações Rápidas do Responsável -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                <button onclick="shareLinkWhatsApp()" class="flex items-center justify-center gap-2 p-3 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-sm transition">
+                  <i data-lucide="message-circle" class="w-4 h-4 text-emerald-600"></i>
+                  <span>Enviar no WhatsApp</span>
+                </button>
+
+                <button onclick="openClientFormWithCurrentSeller()" class="flex items-center justify-center gap-2 p-3 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-800 font-semibold text-sm transition">
+                  <i data-lucide="external-link" class="w-4 h-4 text-blue-600"></i>
+                  <span>Abrir Link Como Cliente</span>
+                </button>
+
+                <button onclick="setOrderFilter('meus'); switchTab('pedidos');" class="flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold text-sm transition">
+                  <i data-lucide="folder-kanban" class="w-4 h-4 text-slate-600"></i>
+                  <span>Ver Meus Pedidos Captados</span>
+                </button>
+              </div>
+
+              <!-- Métricas do Link do Responsável -->
+              <div class="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100" id="seller-metrics-cards">
+                <!-- Preenchido via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista de Contas / Equipe (Controlada conforme Permissão da Conta Logada) -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 class="text-base font-bold text-slate-900">Contas de Responsáveis & Gestão de Acessos</h3>
+                <p class="text-xs text-slate-500" id="team-table-subtitle">Veja as contas cadastradas e teste o login ou o link de cada responsável.</p>
+              </div>
+              <div id="admin-Only-add-user-btn">
+                <!-- Botão de criar novo responsável (Restrito ao Admin) -->
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th class="py-3 px-3">Responsável / Setor</th>
+                    <th class="py-3 px-3">Login da Conta</th>
+                    <th class="py-3 px-3">Perfil & Restrição</th>
+                    <th class="py-3 px-3 text-center">Pedidos da Conta</th>
+                    <th class="py-3 px-3 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="team-users-table-body" class="divide-y divide-slate-200 text-sm">
+                  <!-- Preenchido via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coluna Direita (1/3): Card de Login Rápido + QR Code + Matriz de Permissões (Sem Leitura) -->
+        <div class="space-y-6">
+          <!-- Card de Sessão / Troca de Conta via Login -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i data-lucide="key-round" class="w-5 h-5 text-blue-600"></i>
+                <h3 class="text-base font-bold text-slate-900">Sessão da Conta</h3>
+              </div>
+              <button onclick="openLoginModal()" class="text-xs font-bold text-blue-600 hover:text-blue-800 underline">
+                Trocar de Conta
+              </button>
+            </div>
+            <div id="sidebar-account-summary" class="text-xs space-y-2">
+              <!-- Preenchido via JS -->
+            </div>
+          </div>
+
+          <!-- Card QR Code para Balcão / Catálogo -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm text-center space-y-3">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">
+              <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
+              QR Code com Login do Responsável
+            </div>
+            <h3 class="text-base font-bold text-slate-900">Captação Presencial ou Catálogo</h3>
+            <div class="w-40 h-40 mx-auto bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center p-3">
+              <!-- SVG QR Code estilizado -->
+              <svg viewBox="0 0 100 100" class="w-28 h-28 text-silas-900" fill="currentColor">
+                <rect x="10" y="10" width="25" height="25" rx="3" fill="none" stroke="currentColor" stroke-width="6"/>
+                <rect x="17" y="17" width="11" height="11" rx="1"/>
+                <rect x="65" y="10" width="25" height="25" rx="3" fill="none" stroke="currentColor" stroke-width="6"/>
+                <rect x="72" y="17" width="11" height="11" rx="1"/>
+                <rect x="10" y="65" width="25" height="25" rx="3" fill="none" stroke="currentColor" stroke-width="6"/>
+                <rect x="17" y="72" width="11" height="11" rx="1"/>
+                <rect x="44" y="12" width="6" height="6"/>
+                <rect x="44" y="24" width="6" height="12"/>
+                <rect x="53" y="18" width="6" height="6"/>
+                <rect x="12" y="44" width="12" height="6"/>
+                <rect x="30" y="44" width="6" height="6"/>
+                <rect x="44" y="44" width="12" height="12" rx="2"/>
+                <rect x="62" y="44" width="6" height="12"/>
+                <rect x="74" y="44" width="14" height="6"/>
+                <rect x="44" y="64" width="6" height="12"/>
+                <rect x="56" y="60" width="12" height="6"/>
+                <rect x="74" y="64" width="6" height="6"/>
+                <rect x="62" y="74" width="16" height="6"/>
+                <rect x="44" y="82" width="12" height="6"/>
+                <rect x="82" y="78" width="8" height="10"/>
+              </svg>
+              <span id="qr-token-label" class="text-[10px] font-mono-code text-slate-500 mt-1">?login=kaue</span>
+            </div>
+            <p class="text-xs text-slate-500">
+              O cliente aponta a câmera do celular e abre o formulário já logado/vinculado à conta de <strong id="qr-seller-name">Kauê</strong>.
+            </p>
+          </div>
+
+          <!-- Card Matriz de Perfis e Permissões (Apenas Administrador e Responsável) -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex items-center gap-2">
+              <i data-lucide="shield" class="w-5 h-5 text-blue-600"></i>
+              <h3 class="text-base font-bold text-slate-900">Restrições por Tipo de Conta</h3>
+            </div>
+            <p class="text-xs text-slate-500">
+              Cada responsável faz login em sua própria conta. Ele edita apenas os pedidos vinculados ao seu login, mantendo a segurança dos pedidos de outros responsáveis.
+            </p>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                    <th class="py-2 px-2 text-left">Tipo de Conta</th>
+                    <th class="py-2 px-2 text-center">Meus Pedidos</th>
+                    <th class="py-2 px-2 text-center">Pedidos de Outros</th>
+                    <th class="py-2 px-2 text-center">Equipe / Contas</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                  <tr>
+                    <td class="py-2.5 px-2 font-bold text-slate-900">Administrador</td>
+                    <td class="py-2.5 px-2 text-center text-emerald-700 font-semibold">Edita Tudo</td>
+                    <td class="py-2.5 px-2 text-center text-emerald-700 font-semibold">Edita Tudo</td>
+                    <td class="py-2.5 px-2 text-center text-emerald-700 font-semibold">Gerencia</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2.5 px-2 font-bold text-slate-900">Responsável</td>
+                    <td class="py-2.5 px-2 text-center text-emerald-700 font-semibold">Edita</td>
+                    <td class="py-2.5 px-2 text-center text-amber-700 font-semibold">Bloqueado (Só vê)</td>
+                    <td class="py-2.5 px-2 text-center text-rose-600 font-semibold">Restrito</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================
+         ABA 5: ÁREA DO CLIENTE (FLUXO INTELIGENTE: IDENTIFICAÇÃO -> CRIAR PEDIDO OU ACOMPANHAR)
+         ========================================================== -->
+    <section id="tab-cliente-portal" class="tab-section hidden space-y-6 animate-fade-in">
+      <div class="max-w-4xl mx-auto space-y-6">
+
+        <!-- TOPO DO LINK RASTREÁVEL (Mostra a qual conta de responsável o link pertence) -->
+        <div class="bg-gradient-to-r from-silas-950 via-silas-900 to-emerald-950 rounded-2xl p-5 text-white shadow-md border border-slate-800">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-semibold border border-emerald-400/30">
+                <i data-lucide="link-2" class="w-3.5 h-3.5"></i>
+                PORTAL DO CLIENTE — LINK RASTREÁVEL
+              </div>
+              <h2 class="text-xl sm:text-2xl font-extrabold">Silas Confecções e Serigrafia</h2>
+              <p class="text-xs sm:text-sm text-slate-300">
+                Identifique-se abaixo para <strong>criar um novo pedido</strong> ou <strong>acompanhar seus pedidos e aprovar artes</strong>.
+              </p>
+            </div>
+
+            <!-- Indicador do Login do Responsável vinculado ao Link -->
+            <div class="bg-white/10 backdrop-blur border border-white/15 rounded-xl p-3 shrink-0">
+              <div class="text-[10px] uppercase tracking-wider text-emerald-300 font-bold">Atendimento Vinculado à Conta:</div>
+              <div class="flex items-center gap-2.5 mt-1">
+                <div class="w-8 h-8 rounded-full bg-emerald-500 text-white font-bold flex items-center justify-center text-xs" id="form-seller-avatar">KA</div>
+                <div>
+                  <div class="text-sm font-bold text-white leading-tight" id="form-seller-name">Kauê (Atendimento)</div>
+                  <div class="text-[11px] font-mono-code text-emerald-300" id="form-seller-token">Login: @kaue</div>
+                </div>
+              </div>
+              <div class="mt-2 pt-2 border-t border-white/10 flex items-center gap-1.5 text-[11px] text-slate-300">
+                <span>Testar link de:</span>
+                <select id="form-seller-override" onchange="changeFormSellerToken(this.value)" class="bg-slate-900 text-white rounded px-2 py-0.5 text-[11px] border border-white/20 font-semibold">
+                  <!-- Preenchido via JS -->
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===============================================================
+             PASSO 1 DO CLIENTE: TELA DE ENTRADA DUPLA (CLIENTES ANTIGOS vs CLIENTES NOVOS)
+             =============================================================== -->
+        <div id="client-step-identify" class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 animate-fade-in">
+          <div class="text-center max-w-2xl mx-auto space-y-1.5">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-blue-600"></i>
+              Portal de Acesso do Cliente — Silas Confecções
+            </span>
+            <h3 class="text-lg sm:text-2xl font-extrabold text-slate-900">Como você deseja continuar?</h3>
+            <p class="text-xs sm:text-sm text-slate-500">
+              Escolha abaixo se você <strong>já é nosso cliente</strong> ou se é a <strong>sua primeira vez</strong> comprando conosco.
+            </p>
+          </div>
+
+          <!-- 2 PORTAS DE ENTRADA LADO A LADO -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+            <!-- PORTA 1: JÁ SOU CLIENTE (CLIENTES ANTIGOS / RECORRENTES) -->
+            <div class="rounded-2xl border-2 border-blue-200 bg-blue-50/30 p-6 flex flex-col justify-between space-y-5">
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 font-extrabold text-[11px] uppercase tracking-wider">
+                    JÁ SOU CLIENTE
+                  </span>
+                  <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-2xs">
+                    <i data-lucide="user-check" class="w-5 h-5"></i>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="text-base sm:text-lg font-extrabold text-slate-900">Clientes Cadastrados</h4>
+                  <p class="text-xs text-slate-600 mt-1">
+                    Já fez pedidos na Silas Confecções? Digite seu <strong>CPF, CNPJ ou WhatsApp</strong> para acompanhar seus pedidos ou pedir novamente.
+                  </p>
+                </div>
+
+                <form onsubmit="handleClientIdentificationSubmit(event)" class="space-y-3 pt-1">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Seu CPF, CNPJ ou WhatsApp *</label>
+                    <div class="relative">
+                      <i data-lucide="fingerprint" class="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                      <input
+                        type="text"
+                        id="client-identify-input"
+                        required
+                        placeholder="Ex: 12.345.678/0001-90 ou (11) 99812-3456"
+                        class="w-full pl-11 pr-4 py-3 text-sm bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:border-blue-600 font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Alerta caso digite um CPF não encontrado -->
+                  <div id="login-not-found-alert" class="hidden rounded-xl bg-amber-50 border border-amber-300 p-3 text-xs text-amber-900 space-y-2">
+                    <div class="flex items-start gap-2">
+                      <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
+                      <span>Não encontramos nenhum cliente com este dado. É sua primeira compra?</span>
+                    </div>
+                    <button type="button" onclick="openNewClientRegistrationStep(true)" class="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition">
+                      Ir para Cadastro de Cliente Novo →
+                    </button>
+                  </div>
+
+                  <button type="submit" class="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-sm transition inline-flex items-center justify-center gap-2">
+                    <span>Entrar na Minha Conta</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                  </button>
+                </form>
+              </div>
+
+              <div class="pt-3 border-t border-blue-200/60 flex items-center gap-2 text-[11px] text-slate-500">
+                <i data-lucide="zap" class="w-3.5 h-3.5 text-blue-600 shrink-0"></i>
+                <span>Acesso imediato sem precisar decorar senha.</span>
+              </div>
+            </div>
+
+            <!-- PORTA 2: SOU CLIENTE NOVO (PRIMEIRA COMPRA) -->
+            <div class="rounded-2xl border-2 border-emerald-300 bg-emerald-50/30 p-6 flex flex-col justify-between space-y-5">
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-extrabold text-[11px] uppercase tracking-wider">
+                    PRIMEIRA VEZ AQUI?
+                  </span>
+                  <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-2xs">
+                    <i data-lucide="user-plus" class="w-5 h-5"></i>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="text-base sm:text-lg font-extrabold text-slate-900">Sou Cliente Novo</h4>
+                  <p class="text-xs text-slate-600 mt-1">
+                    Vai fazer seu primeiro pedido com a Silas Confecções? Faça seu cadastro rápido e avance direto para montar sua grade de camisas.
+                  </p>
+                </div>
+
+                <ul class="space-y-2 pt-2 text-xs text-slate-700">
+                  <li class="flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-[11px] shrink-0">1</span>
+                    <span><strong>Passo 1:</strong> Cadastre os dados da sua Escola, Empresa ou Equipe</span>
+                  </li>
+                  <li class="flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-[11px] shrink-0">2</span>
+                    <span><strong>Passo 2:</strong> Escolha a modelagem, gola e preencha a grade</span>
+                  </li>
+                  <li class="flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-[11px] shrink-0">3</span>
+                    <span><strong>Passo 3:</strong> Receba o Nº da sua OP e acompanhe tudo online</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="space-y-3 pt-2">
+                <button
+                  type="button"
+                  onclick="openNewClientRegistrationStep(false)"
+                  class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition inline-flex items-center justify-center gap-2"
+                >
+                  <i data-lucide="user-plus" class="w-4 h-4"></i>
+                  <span>Cadastrar & Criar Meu 1º Pedido</span>
+                </button>
+                <div class="text-center text-[11px] text-slate-500">
+                  Leva menos de 1 minuto • Sem necessidade de senha
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botões de Simulação Rápida para Apresentação ao Cliente -->
+          <div class="pt-5 border-t border-slate-100 space-y-3">
+            <div class="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
+              <span>Atalhos para sua Apresentação (Testar com 1 Clique):</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5" id="client-quick-sim-buttons">
+              <!-- Preenchido via JS com clientes reais da demo + opção de cliente novo -->
+            </div>
+          </div>
+        </div>
+
+        <!-- ===============================================================
+             PASSO 1.5 (EXCLUSIVO CLIENTE NOVO): TELA DE CADASTRO ANTES DE CRIAR PEDIDO
+             =============================================================== -->
+        <div id="client-step-register" class="hidden bg-white rounded-2xl border-2 border-emerald-500/40 p-6 sm:p-8 shadow-sm space-y-6 animate-fade-in">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div class="flex items-center gap-3.5">
+              <div class="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <i data-lucide="user-plus" class="w-6 h-6"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-extrabold uppercase">
+                    PASSO 1 DE 2 • CADASTRO DE CLIENTE NOVO
+                  </span>
+                </div>
+                <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 mt-0.5">Cadastre seus Dados para Continuar</h3>
+                <p class="text-xs text-slate-500">Após salvar seu cadastro, você irá direto para a tela de montar seu pedido.</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 self-start sm:self-center">
+              <button
+                type="button"
+                onclick="fillDemoNewClientRegistration()"
+                class="px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition inline-flex items-center gap-1.5"
+              >
+                <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
+                <span>Preencher Exemplo</span>
+              </button>
+              <button
+                type="button"
+                onclick="logoutIdentifiedClient()"
+                class="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-bold transition inline-flex items-center gap-1.5"
+              >
+                <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                <span>Voltar ao Login</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Alerta Inteligente se o cliente novo digitar um CPF/CNPJ que já existe -->
+          <div id="register-duplicate-alert" class="hidden rounded-xl bg-blue-50 border border-blue-300 p-4 text-xs text-blue-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-start gap-2.5">
+              <i data-lucide="info" class="w-5 h-5 text-blue-600 shrink-0 mt-0.5"></i>
+              <div id="register-duplicate-alert-text"></div>
+            </div>
+            <button
+              type="button"
+              id="btn-switch-to-existing-client"
+              class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shrink-0 transition"
+            >
+              Entrar com Este Cadastro →
+            </button>
+          </div>
+
+          <form id="new-client-register-form" onsubmit="handleNewClientRegistrationSubmit(event)" class="space-y-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">CPF ou CNPJ *</label>
+                <input
+                  type="text"
+                  id="reg-documento"
+                  required
+                  oninput="checkDuplicateOnRegistrationInput()"
+                  placeholder="Ex: 77.888.999/0001-55 ou 123.456.789-00"
+                  class="w-full px-3.5 py-3 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono-code"
+                />
+                <span class="text-[11px] text-slate-400">Usado para você consultar seus pedidos depois sem precisar de senha.</span>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Nome do Cliente / Escola / Empresa *</label>
+                <input
+                  type="text"
+                  id="reg-nome"
+                  required
+                  placeholder="Ex: Construtora Horizonte Engenharia"
+                  class="w-full px-3.5 py-3 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">WhatsApp Principal (Com DDD) *</label>
+                <input
+                  type="text"
+                  id="reg-telefone"
+                  required
+                  oninput="checkDuplicateOnRegistrationInput()"
+                  placeholder="Ex: (11) 99444-5566"
+                  class="w-full px-3.5 py-3 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <span class="text-[11px] text-slate-400">Por onde nosso consultor enviará a arte para aprovação.</span>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">E-mail *</label>
+                <input
+                  type="email"
+                  id="reg-email"
+                  required
+                  oninput="checkDuplicateOnRegistrationInput()"
+                  placeholder="Ex: contato@empresa.com.br"
+                  class="w-full px-3.5 py-3 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <input type="checkbox" id="reg-lgpd" required checked class="mt-1 w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500" />
+              <label for="reg-lgpd" class="text-xs text-slate-600 leading-relaxed cursor-pointer">
+                <strong class="text-slate-900">Conformidade LGPD (Lei nº 13.709/2018):</strong>
+                Autorizo o cadastro dos meus dados de contato pela <strong>Silas Confecções e Serigrafia</strong> para emissão de Ordens de Produção (OP) e atendimento via WhatsApp.
+              </label>
+            </div>
+
+            <div class="flex items-center justify-end pt-2">
+              <button
+                type="submit"
+                class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md transition inline-flex items-center justify-center gap-2"
+              >
+                <span>Salvar Cadastro e Ir para Criar Pedido</span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- ===============================================================
+             PASSO 2 DO CLIENTE: PAINEL PÓS-IDENTIFICAÇÃO (ESCOLHA DE AÇÃO)
+             =============================================================== -->
+        <div id="client-step-hub" class="hidden space-y-6 animate-fade-in">
+          <!-- Barra de Reconhecimento do Cliente + Botão Trocar -->
+          <div id="identified-client-banner" class="bg-white rounded-2xl border-2 border-emerald-500/40 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <!-- Preenchido via JS -->
+          </div>
+
+          <!-- OS 2 GRANDES CARDS DE ESCOLHA: 1. CRIAR PEDIDO | 2. ACOMPANHAR MEUS PEDIDOS -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              type="button"
+              id="btn-choice-new-order"
+              onclick="switchClientSubtab('form')"
+              class="text-left p-5 rounded-2xl border-2 transition flex items-start gap-4 group"
+            >
+              <div class="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <i data-lucide="file-plus-2" class="w-6 h-6"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-700">OPÇÃO 1</span>
+                  <span id="badge-choice-new" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Criar Agora</span>
+                </div>
+                <h4 class="text-base sm:text-lg font-extrabold text-slate-900 mt-0.5">Criar Novo Pedido</h4>
+                <p class="text-xs text-slate-500 mt-1">
+                  Montar uma nova grade de uniformes ou <strong>repetir um pedido anterior</strong> com seus dados já preenchidos.
+                </p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              id="btn-choice-track-orders"
+              onclick="switchClientSubtab('track')"
+              class="text-left p-5 rounded-2xl border-2 transition flex items-start gap-4 group"
+            >
+              <div class="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <i data-lucide="package-search" class="w-6 h-6"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-extrabold uppercase tracking-wider text-blue-700">OPÇÃO 2</span>
+                  <span id="badge-choice-track" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800">0 pedidos</span>
+                </div>
+                <h4 class="text-base sm:text-lg font-extrabold text-slate-900 mt-0.5">Acompanhar Meus Pedidos</h4>
+                <p class="text-xs text-slate-500 mt-1">
+                  Consulte os <strong>detalhes completos do seu pedido</strong> enviado no formulário e veja se já está <strong>pronto ou em andamento</strong>.
+                </p>
+              </div>
+            </button>
+          </div>
+
+          <!-- ===============================================================
+               CONTEÚDO DA OPÇÃO 1: FORMULÁRIO DE NOVO PEDIDO DO CLIENTE
+               =============================================================== -->
+          <div id="client-subtab-form" class="hidden space-y-6 animate-fade-in">
+            <!-- Barra de Recompra em 1 Clique (Aparece automaticamente se o cliente já tem pedidos anteriores) -->
+            <div id="repeat-previous-order-box" class="hidden bg-indigo-50 border border-indigo-200 rounded-2xl p-4 space-y-2.5">
+              <!-- Preenchido via JS -->
+            </div>
+
+            <!-- Formulário Principal do Cliente -->
+            <form id="client-order-form" onsubmit="submitClientOrderForm(event)" class="space-y-6">
+              <!-- ETAPA 1: DADOS DO CLIENTE / ESCOLA / EMPRESA -->
+              <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div class="flex items-center gap-2.5">
+                    <span class="w-7 h-7 rounded-full bg-silas-900 text-white font-bold text-xs flex items-center justify-center">1</span>
+                    <div>
+                      <h4 class="text-base font-bold text-slate-900">Identificação do Pedido</h4>
+                      <p class="text-xs text-slate-500">Dados do cliente e prazo desejado para a entrega das peças.</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onclick="fillDemoNewClientInForm()"
+                    class="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition inline-flex items-center gap-1.5"
+                  >
+                    <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
+                    <span>Preencher Exemplo de Pedido</span>
+                  </button>
+                </div>
+
+                <!-- CARD COMPACTO PARA CLIENTE RECORRENTE (Substitui os inputs chatos) -->
+                <div id="recurrent-client-card" class="hidden rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-2">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Faturamento & Cadastro:</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Cliente Recorrente</span>
+                      </div>
+                      <div class="text-base font-bold text-slate-900 mt-0.5" id="rec-client-name">Colégio Estadual Dom Pedro II</div>
+                      <div class="text-xs text-slate-500 font-mono-code mt-0.5">
+                        <span id="rec-client-doc">CNPJ: 12.345.678/0001-90</span> • <span id="rec-client-contact">diretoria@colegiodompedro.edu.br | (11) 99812-3456</span>
+                      </div>
+                    </div>
+                    <button type="button" onclick="toggleEditClientFields()" class="text-xs font-semibold text-blue-600 hover:text-blue-800 self-start sm:self-center underline">
+                      Alterar dados cadastrais?
+                    </button>
+                  </div>
+                </div>
+
+                <!-- CAMPOS DE CADASTRO (Ficam abertos para cliente novo, ou recolhidos se for recorrente) -->
+                <div id="full-client-fields-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">CPF ou CNPJ *</label>
+                    <input type="text" id="cf-documento" required oninput="checkExistingClientOnInput()" placeholder="Ex: 12.345.678/0001-90" class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono-code" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Cliente / Escola / Empresa *</label>
+                    <input type="text" id="cf-nome" required placeholder="Ex: Colégio Estadual Dom Pedro II" class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">WhatsApp (Contato) *</label>
+                    <input type="text" id="cf-telefone" required oninput="checkExistingClientOnInput()" placeholder="Ex: (11) 99876-5432" class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">E-mail *</label>
+                    <input type="email" id="cf-email" required oninput="checkExistingClientOnInput()" placeholder="Ex: contato@colegiodompedro.com.br" class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </div>
+
+                <!-- OS 3 CAMPOS QUE MUDAM A CADA PEDIDO (Funcionário Solicitante, Turma/Setor e Data de Entrega) -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-900 mb-1">Funcionário / Professor Solicitante *</label>
+                    <input type="text" id="cf-solicitante" required placeholder="Ex: Prof. Roberto (11) 98877-6655" class="w-full px-3.5 py-2.5 text-sm border-2 border-blue-200 rounded-xl focus:outline-none focus:border-blue-600 bg-blue-50/20 font-semibold" />
+                    <span class="text-[11px] text-slate-500">Quem está pedindo e vai aprovar este lote</span>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-900 mb-1">Turma / Setor deste Pedido <span class="text-slate-400 font-normal">(Opcional)</span></label>
+                    <input type="text" id="cf-turma" placeholder="Ex: 3º Ano (Terceirão) ou Equipe Futsal" class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-blue-600 bg-white font-semibold" />
+                    <span class="text-[11px] text-slate-500">Se aplicável, informe a turma ou setor</span>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-900 mb-1">Data Desejada para Entrega *</label>
+                    <input type="date" id="cf-entrega" required class="w-full px-3.5 py-2.5 text-sm border-2 border-blue-200 rounded-xl focus:outline-none focus:border-blue-600 bg-blue-50/20 font-semibold" />
+                    <span class="text-[11px] text-slate-500">Prazo solicitado para envio</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ETAPA 2: ESPECIFICAÇÕES DO PRODUTO (CONFORME OP MESTRA SILAS CONFECÇÕES) -->
+              <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
+                <div class="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                  <span class="w-7 h-7 rounded-full bg-silas-900 text-white font-bold text-xs flex items-center justify-center">2</span>
+                  <div>
+                    <h4 class="text-base font-bold text-slate-900">Especificações da Camisa, Gola e Impressão</h4>
+                    <p class="text-xs text-slate-500">Selecione o padrão desejado para sua Ordem de Produção.</p>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Tipo de Gola *</label>
+                    <select id="cf-gola" onchange="onChangeClientModelagem()" class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="Redonda">Gola Redonda</option>
+                      <option value="Polo">Gola Polo</option>
+                      <option value="V">Gola V</option>
+                      <option value="Personalizada">Gola Personalizada</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Modelagem Principal *</label>
+                    <select id="cf-modelagem" onchange="onChangeClientModelagem()" class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="Padrão/Unissex + Baby Look">Padrão / Unissex + Baby Look (Feminina)</option>
+                      <option value="Padrão/Unissex">Apenas Padrão / Unissex (Masculino/Reto)</option>
+                      <option value="Baby Look">Apenas Baby Look (Feminina Acinturada)</option>
+                      <option value="Infantil + Padrão">Escolar: Infantil (2 ao 12) + Adulto</option>
+                      <option value="Regata">Regata (Masculina / Feminina)</option>
+                      <option value="Colete Dupla Face">Colete Esportivo Dupla Face (Unissex)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Técnica / Impressão *</label>
+                    <select id="cf-tecnica" class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="Sublimação Total">Sublimação Total</option>
+                      <option value="Sublimação Localizada">Sublimação Localizada</option>
+                      <option value="DTF">Impressão DTF</option>
+                      <option value="Bordado">Bordado</option>
+                      <option value="Serigrafia / Silk + Bordado">Serigrafia / Silk + Bordado</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Preferência de Tecido / Malha (Opcional)</label>
+                    <input type="text" id="cf-malha-pref" placeholder="Ex: Dry Fit Sport, Malha PV Anti-Pilling, Algodão..." class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Cores Principais e Detalhes da Arte</label>
+                    <input type="text" id="cf-observacoes" placeholder="Ex: Azul Marinho com detalhes dourados nas mangas e escudo no peito" class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- ETAPA 3: GRADE DE QUANTIDADES POR MODELAGEM (ITEM 4 DA OP MESTRA) -->
+              <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div class="flex items-center gap-2.5">
+                    <span class="w-7 h-7 rounded-full bg-silas-900 text-white font-bold text-xs flex items-center justify-center">3</span>
+                    <div>
+                      <h4 class="text-base font-bold text-slate-900">Grade de Quantidades por Modelagem e Tamanho</h4>
+                      <p class="text-xs text-slate-500">A tabela abaixo se adapta automaticamente à modelagem escolhida.</p>
+                    </div>
+                  </div>
+                  <div class="bg-emerald-50 border border-emerald-200 px-4 py-1.5 rounded-xl flex items-center gap-2">
+                    <span class="text-xs font-semibold text-emerald-800">Total Geral do Pedido:</span>
+                    <span id="cf-grade-total-badge" class="text-base font-extrabold text-emerald-900 font-mono-code">0 pçs</span>
+                  </div>
+                </div>
+
+                <!-- Seletores rápidos de Linhas e Tamanhos da Grade -->
+                <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
+                  <div class="flex flex-wrap items-center gap-3">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Cortes na Grade:</span>
+                    <label id="cf-toggle-padrao-wrap" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800 cursor-pointer hover:border-blue-400 transition shadow-2xs">
+                      <input type="checkbox" id="cf-check-padrao" checked onchange="onToggleGradeCheckboxes()" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
+                      <span id="cf-label-check-padrao">Padrão / Unissex</span>
+                    </label>
+                    <label id="cf-toggle-babylook-wrap" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800 cursor-pointer hover:border-pink-400 transition shadow-2xs">
+                      <input type="checkbox" id="cf-check-babylook" checked onchange="onToggleGradeCheckboxes()" class="w-4 h-4 text-pink-600 rounded border-slate-300 focus:ring-pink-500" />
+                      <span id="cf-label-check-babylook">Baby Look (Feminina)</span>
+                    </label>
+                  </div>
+
+                  <div class="flex flex-wrap items-center gap-3">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Faixa de Tamanho:</span>
+                    <label class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 cursor-pointer hover:border-amber-400 transition shadow-2xs">
+                      <input type="checkbox" id="cf-check-infantil" onchange="onToggleGradeCheckboxes()" class="w-4 h-4 text-amber-600 rounded border-slate-300 focus:ring-amber-500" />
+                      <span>Grade Infantil (2 ao 12)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                  <table class="w-full text-xs border-collapse op-table-grid">
+                    <thead id="cf-grade-thead">
+                      <!-- Cabeçalho dinâmico preenchido via JS -->
+                    </thead>
+                    <tbody id="cf-grade-tbody">
+                      <!-- Linhas dinâmicas preenchidas via JS -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Lista de Nomes / Números Personalizados (Opcional — para aprovação no WhatsApp)</label>
+                  <textarea id="cf-lista-nomes" rows="2" placeholder="Ex: 1. Lucas - Tam M - Nº 10 | 2. Mariana - Baby Look P - Nº 07..." class="w-full px-3.5 py-2 text-xs font-mono-code border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+              </div>
+
+              <!-- ETAPA 4: CONSENTIMENTO LGPD E ENVIO -->
+              <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                <div class="flex items-start gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <input type="checkbox" id="cf-lgpd" required checked class="mt-1 w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
+                  <label for="cf-lgpd" class="text-xs text-slate-600 leading-relaxed cursor-pointer">
+                    <strong class="text-slate-900">Termo de Consentimento (Conformidade LGPD — Lei nº 13.709/2018):</strong>
+                    Autorizo o armazenamento dos meus dados de contato (Nome, CPF/CNPJ, WhatsApp e E-mail) pela <strong>Silas Confecções e Serigrafia</strong> exclusivamente para fins de emissão da Ordem de Produção (OP), histórico de pedidos e comunicação sobre o andamento da produção.
+                  </label>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
+                  <button type="submit" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md transition">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    <span>Enviar Pedido e Gerar Nº da OP</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- ===============================================================
+               CONTEÚDO DA OPÇÃO 2: ACOMPANHAR MEUS PEDIDOS E STATUS DE PRONTIDÃO
+               =============================================================== -->
+          <div id="client-subtab-track" class="hidden space-y-6 animate-fade-in">
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div>
+                  <h3 class="text-lg font-extrabold text-slate-900">Acompanhamento dos Meus Pedidos</h3>
+                  <p class="text-xs text-slate-500">Confira todos os detalhes enviados no seu formulário e veja se seu pedido já está pronto ou em andamento.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-500">Selecionar Pedido:</span>
+                  <select id="client-track-order-select" onchange="renderClientOrderTracker(this.value)" class="px-3.5 py-2 text-sm font-bold bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <!-- Preenchido via JS apenas com os pedidos do cliente identificado -->
+                  </select>
+                </div>
+              </div>
+
+              <div id="client-tracker-content">
+                <!-- Preenchido via JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================================
+       MODAL 1: DETALHES E EDIÇÃO COMPLETA DA ORDEM DE PRODUÇÃO (OP) + AUDITORIA
+       ========================================================================= -->
+  <div id="order-detail-modal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto no-print">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-fade-in">
+      <!-- Cabeçalho do Modal -->
+      <div class="bg-silas-900 text-white px-6 py-4 flex items-center justify-between gap-4 shrink-0">
+        <div class="flex items-center gap-3">
+          <span id="modal-op-number" class="px-3 py-1 rounded-lg bg-white/15 font-mono-code font-bold text-base">OP-2026-0042</span>
+          <div>
+            <h3 id="modal-client-name" class="text-lg font-bold leading-tight">Cliente / Escola</h3>
+            <p id="modal-client-sub" class="text-xs text-blue-200">Responsável & Data</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="openPrintableOPModal(currentOpenOrderId)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-silas-900 hover:bg-blue-50 text-xs font-bold shadow-xs transition">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+            <span>Folha OP Mestra (Imprimir)</span>
+          </button>
+          <button onclick="closeOrderModal()" class="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Corpo Rolável do Modal -->
+      <div id="order-detail-modal-body" class="p-6 overflow-y-auto space-y-6 flex-1">
+        <!-- Preenchido dinamicamente via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 2: FOLHA DE IMPRESSÃO FIEL À "OP MESTRA REESTRUTURADA" (SILAS PDF)
+       ========================================================================= -->
+  <div id="op-print-modal" class="fixed inset-0 z-50 hidden bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-2 sm:p-6 overflow-y-auto">
+    <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[95vh] flex flex-col overflow-hidden">
+      <!-- Barra de Ações do Preview de Impressão (Oculta ao imprimir) -->
+      <div class="bg-slate-900 text-white px-5 py-3 flex items-center justify-between no-print shrink-0">
+        <div class="flex items-center gap-2 text-xs sm:text-sm">
+          <i data-lucide="file-Spreadsheet" class="w-4 h-4 text-blue-400"></i>
+          <span class="font-semibold">Visualização Oficial: ORDEM DE PRODUÇÃO (OP MESTRA REESTRUTURADA)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="window.print()" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+            <span>Imprimir / Salvar PDF</span>
+          </button>
+          <button onclick="closePrintableOPModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition">
+            Fechar
+          </button>
+        </div>
+      </div>
+
+      <!-- Conteúdo da Folha OP Mestra -->
+      <div id="op-print-sheet-content" class="p-6 overflow-y-auto flex-1">
+        <!-- Preenchido via JS seguindo exatamente o layout do PDF Silas Confecções -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 3: DETALHES DO CLIENTE, HISTÓRICO CONSOLIDADO E LGPD
+       ========================================================================= -->
+  <div id="client-detail-modal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto no-print">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-fade-in">
+      <div class="bg-silas-900 text-white px-6 py-4 flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-blue-300">FICHA CONSOLIDADA DO CLIENTE</span>
+          <h3 id="client-modal-title" class="text-lg font-bold">Nome do Cliente</h3>
+        </div>
+        <button onclick="closeClientModal()" class="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="client-detail-modal-body" class="p-6 overflow-y-auto space-y-6 flex-1">
+        <!-- Preenchido via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 4: NOVO CLIENTE MANUAL
+       ========================================================================= -->
+  <div id="new-client-modal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden animate-fade-in">
+      <div class="bg-silas-900 text-white px-6 py-4 flex items-center justify-between">
+        <h3 class="text-base font-bold">Cadastrar Cliente Manualmente</h3>
+        <button onclick="closeNewClientModal()" class="p-1 rounded-lg text-slate-300 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form onsubmit="saveNewManualClient(event)" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Nome / Escola / Empresa *</label>
+          <input type="text" id="nc-nome" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg" placeholder="Ex: Academia Iron Fit" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">CPF / CNPJ (Único) *</label>
+          <input type="text" id="nc-documento" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg" placeholder="Ex: 33.444.555/0001-11" />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">WhatsApp *</label>
+            <input type="text" id="nc-telefone" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg" placeholder="(11) 98888-7777" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">E-mail *</label>
+            <input type="email" id="nc-email" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg" placeholder="contato@empresa.com.br" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeNewClientModal()" class="px-4 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700">Cancelar</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold">Salvar Cliente</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 5: TELA DE LOGIN DO RESPONSÁVEL / ADMINISTRADOR
+       ========================================================================= -->
+  <div id="login-modal" class="fixed inset-0 z-50 hidden bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto no-print">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden animate-fade-in">
+      <div class="bg-gradient-to-r from-silas-950 via-silas-900 to-blue-900 text-white p-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center font-extrabold text-base">
+              SC
+            </div>
+            <div>
+              <h3 class="text-base font-bold">Login do Sistema</h3>
+              <p class="text-xs text-blue-200">Silas Confecções e Serigrafia</p>
+            </div>
+          </div>
+          <button onclick="closeLoginModal()" class="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="p-6 space-y-5">
+        <!-- Formulário de Login por Usuário e Senha -->
+        <form onsubmit="handleLoginSubmit(event)" class="space-y-3.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Login do Responsável (ou E-mail) *</label>
+            <div class="relative">
+              <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input type="text" id="login-username-input" required placeholder="Ex: kaue, silas, luiz, dudu, jonatan" class="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono-code" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Senha *</label>
+            <div class="relative">
+              <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input type="password" id="login-password-input" required value="1234" placeholder="Digite sua senha (Demo: 1234)" class="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">No protótipo, a senha padrão de todas as contas é <code class="font-mono-code font-bold text-slate-600">1234</code>.</p>
+          </div>
+
+          <div id="login-error-msg" class="hidden rounded-lg bg-rose-50 border border-rose-200 p-2.5 text-xs text-rose-700 font-semibold">
+            Login ou senha inválidos. Tente novamente.
+          </div>
+
+          <button type="submit" class="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-sm transition flex items-center justify-center gap-2">
+            <i data-lucide="log-in" class="w-4 h-4"></i>
+            <span>Entrar na Conta</span>
+          </button>
+        </form>
+
+        <!-- Acesso Rápido 1-Clique para Apresentação -->
+        <div class="pt-4 border-t border-slate-200 space-y-2.5">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            Atalho para Apresentação (Entrar com 1 Clique):
+          </div>
+          <div id="quick-login-accounts-list" class="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+            <!-- Preenchido via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 6: CADASTRAR NOVO RESPONSÁVEL (EXCLUSIVO ADMINISTRADOR)
+       ========================================================================= -->
+  <div id="new-user-modal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden animate-fade-in">
+      <div class="bg-silas-900 text-white px-6 py-4 flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-purple-300">EXCLUSIVO ADMINISTRADOR</span>
+          <h3 class="text-base font-bold">Nova Conta de Responsável</h3>
+        </div>
+        <button onclick="closeNewUserModal()" class="p-1 rounded-lg text-slate-300 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form onsubmit="saveNewResponsibleUser(event)" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Nome e Setor *</label>
+          <input type="text" id="nu-nome" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg" placeholder="Ex: Marcos (Vendas Externas)" />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Login (Vai no Link) *</label>
+            <input type="text" id="nu-login" required class="w-full px-3 py-2 text-sm font-mono-code border border-slate-300 rounded-lg" placeholder="Ex: marcos" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Senha de Acesso *</label>
+            <input type="text" id="nu-senha" required value="1234" class="w-full px-3 py-2 text-sm font-mono-code border border-slate-300 rounded-lg" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">E-mail *</label>
+            <input type="email" id="nu-email" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg" placeholder="marcos@silas.com.br" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tipo de Conta *</label>
+            <select id="nu-perfil" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg font-semibold">
+              <option value="responsavel">Responsável</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+        </div>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900">
+          O link exclusivo gerado automaticamente para o cliente será:<br/>
+          <code class="font-mono-code font-bold text-blue-700">?login=[login-do-responsavel]</code>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeNewUserModal()" class="px-4 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700">Cancelar</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold">Criar Conta e Gerar Link</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none no-print"></div>
+
+  <!-- Script Principal da Aplicação -->
+  <script src="app.js"></script>
+</body>
+</html>
